@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>任务管理 · 施耐德电气</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green:#3DCD58;--green-dark:#2ea84a;
+    --red:#E24B4A;--red-bg:#FCEBEB;--red-text:#A32D2D;
+    --orange:#EF9F27;--orange-bg:#FAEEDA;--orange-text:#854F0B;
+    --teal:#1D9E75;--teal-bg:#E1F5EE;--teal-text:#085041;
+    --gray:#888780;--gray-bg:#F1EFE8;--gray-text:#5F5E5A;
+    --blue:#185FA5;--blue-bg:#E6F1FB;--blue-text:#0C447C;
+    --purple:#3C3489;--purple-bg:#EEEDFE;--purple-text:#26215C;
+    --bg:#F7F7F5;--card:#FFF;--border:#E8E8E4;
+    --text:#1a1a1a;--text-2:#6b6b6b;--text-3:#a0a09a;
+    --r:12px;--rs:8px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{font-family:'Noto Sans SC',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+  .header{background:var(--card);border-bottom:1px solid var(--border);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+  .brand{display:flex;align-items:center;gap:10px}
+  .logo{width:32px;height:32px;background:var(--green);border-radius:8px;display:flex;align-items:center;justify-content:center}
+  .logo svg{width:18px;height:18px;fill:none;stroke:white;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .brand-name{font-size:15px;font-weight:600}
+  .brand-sub{font-size:11px;color:var(--text-2)}
+  .btn-add{background:var(--green);color:white;border:none;border-radius:var(--rs);padding:8px 16px;font-size:14px;font-weight:500;font-family:inherit;cursor:pointer}
+  .btn-add:active{background:var(--green-dark)}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:14px 16px 0}
+  .stat{background:var(--card);border:1px solid var(--border);border-radius:var(--rs);padding:10px 8px;text-align:center}
+  .stat-num{font-size:24px;font-weight:600;line-height:1}
+  .stat-label{font-size:10px;color:var(--text-2);margin-top:3px}
+  .filters{display:flex;gap:6px;padding:12px 16px;overflow-x:auto;scrollbar-width:none}
+  .filters::-webkit-scrollbar{display:none}
+  .filter-btn{flex-shrink:0;font-size:12px;font-family:inherit;padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:var(--card);color:var(--text-2);cursor:pointer;white-space:nowrap}
+  .filter-btn.active{background:var(--text);color:white;border-color:var(--text)}
+  .section-label{font-size:11px;font-weight:500;color:var(--text-3);text-transform:uppercase;letter-spacing:.06em;padding:8px 16px 4px}
+  .task-list{display:flex;flex-direction:column;gap:8px;padding:0 16px 16px}
+  .task-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;position:relative;overflow:hidden}
+  .task-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px}
+  .task-card.s-overdue{border-color:#f5c1c1}.task-card.s-overdue::before{background:var(--red)}
+  .task-card.s-soon{border-color:#f5d9a8}.task-card.s-soon::before{background:var(--orange)}
+  .task-card.s-normal::before{background:var(--teal)}
+  .task-card.s-low::before{background:#d0cfc8}
+  .task-card.s-done{opacity:.6}.task-card.s-done::before{background:#d0cfc8}
+  .task-row1{display:flex;align-items:flex-start;gap:10px;margin-bottom:7px}
+  .task-check{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--border);flex-shrink:0;margin-top:1px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .task-check.done{background:var(--teal);border-color:var(--teal)}
+  .task-check.done::after{content:'✓';font-size:11px;color:white;font-weight:600}
+  .task-title{font-size:14px;font-weight:500;flex:1;line-height:1.45}
+  .task-title.done{text-decoration:line-through;color:var(--text-3)}
+  .task-btns{display:flex;gap:2px}
+  .icon-btn{background:none;border:none;cursor:pointer;color:var(--text-3);padding:3px 5px;border-radius:6px;font-size:15px}
+  .task-row2{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding-left:30px}
+  .badge{font-size:11px;padding:2px 8px;border-radius:20px}
+  .b-urgent{background:var(--red-bg);color:var(--red-text)}
+  .b-important{background:var(--orange-bg);color:var(--orange-text)}
+  .b-normal{background:var(--teal-bg);color:var(--teal-text)}
+  .b-low{background:var(--gray-bg);color:var(--gray-text)}
+  .b-metal{background:var(--blue-bg);color:var(--blue-text)}
+  .b-elec{background:var(--purple-bg);color:var(--purple-text)}
+  .due-tag{font-size:11px;color:var(--text-2)}
+  .due-tag.overdue{color:var(--red-text);font-weight:500}
+  .due-tag.soon{color:var(--orange-text)}
+  .task-note{font-size:11px;color:var(--text-3)}
+  .empty{padding:60px 16px;text-align:center;color:var(--text-3)}
+  .empty-icon{font-size:40px;margin-bottom:10px}
+  .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;align-items:flex-end;justify-content:center}
+  .overlay.open{display:flex}
+  .modal{background:var(--card);border-radius:20px 20px 0 0;padding:20px 16px 40px;width:100%;max-width:520px;max-height:92vh;overflow-y:auto}
+  .modal-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 16px}
+  .modal-title{font-size:17px;font-weight:600;margin-bottom:18px}
+  .form-label{font-size:12px;color:var(--text-2);margin-bottom:5px;display:block}
+  .form-group{margin-bottom:14px}
+  .form-input{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--rs);background:var(--bg);color:var(--text);font-size:14px;font-family:inherit}
+  .form-input:focus{outline:none;border-color:var(--green)}
+  .seg-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .seg-opt{border:1px solid var(--border);border-radius:var(--rs);padding:9px 10px;cursor:pointer;text-align:center;font-size:13px;color:var(--text-2);font-family:inherit;background:var(--bg)}
+  .seg-opt.sel-urgent{border-color:var(--red-text);background:var(--red-bg);color:var(--red-text);border-width:1.5px}
+  .seg-opt.sel-important{border-color:var(--orange-text);background:var(--orange-bg);color:var(--orange-text);border-width:1.5px}
+  .seg-opt.sel-normal{border-color:var(--teal);background:var(--teal-bg);color:var(--teal-text);border-width:1.5px}
+  .seg-opt.sel-low{border-color:var(--gray);background:var(--gray-bg);color:var(--gray-text);border-width:1.5px}
+  .seg-opt.sel-metal{border-color:var(--blue);background:var(--blue-bg);color:var(--blue-text);border-width:1.5px}
+  .seg-opt.sel-elec{border-color:var(--purple);background:var(--purple-bg);color:var(--purple-text);border-width:1.5px}
+  .modal-footer{display:flex;gap:10px;margin-top:20px}
+  .btn-cancel{flex:1;padding:11px;border-radius:var(--rs);border:1px solid var(--border);background:transparent;color:var(--text-2);font-size:14px;font-family:inherit;cursor:pointer}
+  .btn-save{flex:2;padding:11px;border-radius:var(--rs);border:none;background:var(--green);color:white;font-size:14px;font-weight:500;font-family:inherit;cursor:pointer}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#1a1a1a;color:white;padding:10px 18px;border-radius:20px;font-size:13px;z-index:200;transition:transform .3s;white-space:nowrap}
+  .toast.show{transform:translateX(-50%) translateY(0)}
+  .sync-dot{width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block;margin-left:6px;vertical-align:middle}
+  .sync-dot.syncing{background:var(--orange);animation:pulse .8s infinite}
+  .sync-dot.error{background:var(--red)}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="brand">
+    <div class="logo"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+    <div>
+      <div class="brand-name">任务管理 <span class="sync-dot" id="sync-dot"></span></div>
+      <div class="brand-sub">施耐德电气</div>
+    </div>
+  </div>
+  <button class="btn-add" onclick="openModal()">＋ 新任务</button>
+</div>
+
+<div class="stats">
+  <div class="stat"><div class="stat-num" id="s-active" style="color:var(--blue)">0</div><div class="stat-label">进行中</div></div>
+  <div class="stat"><div class="stat-num" id="s-overdue" style="color:var(--red)">0</div><div class="stat-label">已过期</div></div>
+  <div class="stat"><div class="stat-num" id="s-soon" style="color:var(--orange)">0</div><div class="stat-label">即将到期</div></div>
+  <div class="stat"><div class="stat-num" id="s-done" style="color:var(--teal)">0</div><div class="stat-label">已完成</div></div>
+</div>
+
+<div class="filters">
+  <button class="filter-btn active" onclick="setFilter('all',this)">全部</button>
+  <button class="filter-btn" onclick="setFilter('urgent',this)">🔴 紧急重要</button>
+  <button class="filter-btn" onclick="setFilter('important',this)">🟠 重要不紧急</button>
+  <button class="filter-btn" onclick="setFilter('metal',this)">🔵 金属团队</button>
+  <button class="filter-btn" onclick="setFilter('elec',this)">🟣 电子团队</button>
+  <button class="filter-btn" onclick="setFilter('overdue',this)">⚠️ 已过期</button>
+  <button class="filter-btn" onclick="setFilter('done',this)">✅ 已完成</button>
+</div>
+
+<div id="main-content"></div>
+
+<div class="overlay" id="modal" onclick="overlayClick(event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="modal-title">新建任务</div>
+    <div class="form-group">
+      <label class="form-label">任务标题 *</label>
+      <input class="form-input" id="f-title" placeholder="输入任务名称...">
+    </div>
+    <div class="form-group">
+      <label class="form-label">所属团队</label>
+      <div class="seg-grid">
+        <button class="seg-opt" data-team="金属" onclick="selTeam('金属')">🔵 金属团队</button>
+        <button class="seg-opt" data-team="电子" onclick="selTeam('电子')">🟣 电子团队</button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">优先级</label>
+      <div class="seg-grid">
+        <button class="seg-opt" data-pri="urgent" onclick="selPri('urgent')">🔴 紧急重要</button>
+        <button class="seg-opt" data-pri="important" onclick="selPri('important')">🟠 重要不紧急</button>
+        <button class="seg-opt" data-pri="normal" onclick="selPri('normal')">🟢 紧急不重要</button>
+        <button class="seg-opt" data-pri="low" onclick="selPri('low')">⚪ 可延后</button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">截止日期</label>
+      <input class="form-input" id="f-due" type="date">
+    </div>
+    <div class="form-group">
+      <label class="form-label">提前预警天数</label>
+      <select class="form-input" id="f-remind">
+        <option value="1">1天前变色提醒</option>
+        <option value="2">2天前变色提醒</option>
+        <option value="3" selected>3天前变色提醒</option>
+        <option value="5">5天前变色提醒</option>
+        <option value="7">7天前变色提醒</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">备注</label>
+      <input class="form-input" id="f-note" placeholder="补充说明（可选）">
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal()">取消</button>
+      <button class="btn-save" onclick="saveTask()">保存任务</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = 'https://task-api.liutao4274.workers.dev';
+let tasks=[], editId=null, curFilter='all';
+let selPriority='normal', selTeamVal='', saveTimer=null;
+const syncDot = document.getElementById('sync-dot');
+
+function setSyncState(s) {
+  syncDot.className = 'sync-dot'+(s==='syncing'?' syncing':s==='error'?' error':'');
+}
+async function loadTasks() {
+  setSyncState('syncing');
+  try {
+    const r = await fetch(`${API}/tasks`);
+    tasks = await r.json();
+    setSyncState('ok');
+  } catch(e) { setSyncState('error'); showToast('加载失败，请检查网络'); }
+  render();
+}
+async function saveTasks() {
+  setSyncState('syncing');
+  try {
+    await fetch(`${API}/tasks`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(tasks)
+    });
+    setSyncState('ok');
+  } catch(e) { setSyncState('error'); showToast('同步失败'); }
+}
+function scheduleSave() { clearTimeout(saveTimer); saveTimer=setTimeout(saveTasks,800); }
+
+function daysDiff(d) {
+  if(!d) return null;
+  const n=new Date(); n.setHours(0,0,0,0);
+  const due=new Date(d); due.setHours(0,0,0,0);
+  return Math.round((due-n)/86400000);
+}
+function cardStatus(t) {
+  if(t.done) return 'done';
+  const d=daysDiff(t.due);
+  if(d===null) return t.priority==='low'?'low':'normal';
+  if(d<0) return 'overdue';
+  if(d<=(t.remind||3)) return 'soon';
+  return t.priority==='low'?'low':'normal';
+}
+function priLabel(p){return{urgent:'紧急重要',important:'重要不紧急',normal:'紧急不重要',low:'可延后'}[p]||p}
+function priBadge(p){return{urgent:'b-urgent',important:'b-important',normal:'b-normal',low:'b-low'}[p]||'b-low'}
+function teamBadge(t){return{金属:'b-metal',电子:'b-elec'}[t]||'b-low'}
+function dueHTML(t) {
+  const d=daysDiff(t.due); if(d===null) return '';
+  if(d<0) return `<span class="due-tag overdue">⚠ 已过期${Math.abs(d)}天</span>`;
+  if(d===0) return `<span class="due-tag soon">⏰ 今天到期</span>`;
+  if(d<=(t.remind||3)) return `<span class="due-tag soon">⏰ 还剩${d}天</span>`;
+  return `<span class="due-tag">📅 ${t.due}</span>`;
+}
+function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+function render() {
+  const po={urgent:0,important:1,normal:2,low:3};
+  let list=tasks;
+  if(curFilter==='urgent') list=tasks.filter(t=>t.priority==='urgent'&&!t.done);
+  else if(curFilter==='important') list=tasks.filter(t=>t.priority==='important'&&!t.done);
+  else if(curFilter==='metal') list=tasks.filter(t=>t.team==='金属'&&!t.done);
+  else if(curFilter==='elec') list=tasks.filter(t=>t.team==='电子'&&!t.done);
+  else if(curFilter==='overdue') list=tasks.filter(t=>{const d=daysDiff(t.due);return d!==null&&d<0&&!t.done});
+  else if(curFilter==='done') list=tasks.filter(t=>t.done);
+  list=[...list].sort((a,b)=>{
+    if(a.done!==b.done) return a.done?1:-1;
+    const ao=daysDiff(a.due)!==null&&daysDiff(a.due)<0, bo=daysDiff(b.due)!==null&&daysDiff(b.due)<0;
+    if(ao!==bo) return ao?-1:1;
+    return (po[a.priority]??2)-(po[b.priority]??2);
+  });
+  const overdue=tasks.filter(t=>{const d=daysDiff(t.due);return d!==null&&d<0&&!t.done}).length;
+  const soon=tasks.filter(t=>{const d=daysDiff(t.due);return d!==null&&d>=0&&d<=(t.remind||3)&&!t.done}).length;
+  document.getElementById('s-active').textContent=tasks.filter(t=>!t.done).length;
+  document.getElementById('s-overdue').textContent=overdue;
+  document.getElementById('s-soon').textContent=soon;
+  document.getElementById('s-done').textContent=tasks.filter(t=>t.done).length;
+  const wrap=document.getElementById('main-content');
+  if(!list.length){wrap.innerHTML='<div class="empty"><div class="empty-icon">📋</div><div>暂无任务</div></div>';return}
+  const active=list.filter(t=>!t.done), done=list.filter(t=>t.done);
+  let html='';
+  if(active.length){html+=`<div class="section-label">进行中 · ${active.length}</div><div class="task-list">`;active.forEach(t=>html+=taskCard(t));html+='</div>';}
+  if(done.length){html+=`<div class="section-label" style="margin-top:6px">已完成 · ${done.length}</div><div class="task-list">`;done.forEach(t=>html+=taskCard(t));html+='</div>';}
+  wrap.innerHTML=html;
+}
+function taskCard(t) {
+  return `<div class="task-card s-${cardStatus(t)}">
+    <div class="task-row1">
+      <div class="task-check ${t.done?'done':''}" onclick="toggleDone('${t.id}')"></div>
+      <div class="task-title ${t.done?'done':''}">${escHtml(t.title)}</div>
+      <div class="task-btns">
+        <button class="icon-btn" onclick="editTask('${t.id}')">✏️</button>
+        <button class="icon-btn" onclick="delTask('${t.id}')">🗑</button>
+      </div>
+    </div>
+    <div class="task-row2">
+      <span class="badge ${priBadge(t.priority)}">${priLabel(t.priority)}</span>
+      ${t.team?`<span class="badge ${teamBadge(t.team)}">${t.team}团队</span>`:''}
+      ${t.due&&!t.done?dueHTML(t):''}
+      ${t.note?`<span class="task-note">${escHtml(t.note)}</span>`:''}
+    </div>
+  </div>`;
+}
+function toggleDone(id){const t=tasks.find(x=>x.id===id);if(t){t.done=!t.done;scheduleSave();render();}}
+function delTask(id){if(!confirm('确认删除？'))return;tasks=tasks.filter(x=>x.id!==id);scheduleSave();render();}
+function editTask(id){
+  const t=tasks.find(x=>x.id===id);if(!t)return;
+  editId=id;
+  document.getElementById('modal-title').textContent='编辑任务';
+  document.getElementById('f-title').value=t.title;
+  document.getElementById('f-due').value=t.due||'';
+  document.getElementById('f-remind').value=t.remind||3;
+  document.getElementById('f-note').value=t.note||'';
+  selPriority=t.priority||'normal';selTeamVal=t.team||'';
+  refreshSelUI();document.getElementById('modal').classList.add('open');
+}
+function openModal(){
+  editId=null;
+  document.getElementById('modal-title').textContent='新建任务';
+  ['f-title','f-due','f-note'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f-remind').value='3';
+  selPriority='normal';selTeamVal='';
+  refreshSelUI();document.getElementById('modal').classList.add('open');
+  setTimeout(()=>document.getElementById('f-title').focus(),100);
+}
+function closeModal(){document.getElementById('modal').classList.remove('open')}
+function overlayClick(e){if(e.target.id==='modal')closeModal()}
+function selPri(val){selPriority=val;refreshSelUI()}
+function selTeam(val){selTeamVal=selTeamVal===val?'':val;refreshSelUI()}
+function refreshSelUI(){
+  document.querySelectorAll('[data-pri]').forEach(el=>el.className='seg-opt'+(el.dataset.pri===selPriority?` sel-${selPriority}`:''));
+  document.querySelectorAll('[data-team]').forEach(el=>{
+    const k={金属:'metal',电子:'elec'}[el.dataset.team];
+    el.className='seg-opt'+(el.dataset.team===selTeamVal?` sel-${k}`:'');
+  });
+}
+function saveTask(){
+  const title=document.getElementById('f-title').value.trim();
+  if(!title){document.getElementById('f-title').style.borderColor='var(--red)';return}
+  document.getElementById('f-title').style.borderColor='';
+  const task={
+    id:editId||Date.now().toString(),title,team:selTeamVal,priority:selPriority,
+    due:document.getElementById('f-due').value,
+    remind:parseInt(document.getElementById('f-remind').value),
+    note:document.getElementById('f-note').value.trim(),
+    done:editId?(tasks.find(x=>x.id===editId)?.done||false):false,
+    created:editId?(tasks.find(x=>x.id===editId)?.created||Date.now()):Date.now()
+  };
+  if(editId) tasks=tasks.map(x=>x.id===editId?task:x);
+  else tasks.unshift(task);
+  scheduleSave();closeModal();render();
+  showToast(editId?'任务已更新':'任务已添加');
+}
+function setFilter(f,btn){
+  curFilter=f;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');render();
+}
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+loadTasks();
+setInterval(loadTasks,5*60*1000);
+</script>
+</body>
+</html>
