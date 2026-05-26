@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>任务管理 · 施耐德电气</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #3DCD58; --green-dark: #2ea84a;
+    --red: #E24B4A; --red-bg: #FCEBEB; --red-text: #A32D2D;
+    --orange: #EF9F27; --orange-bg: #FAEEDA; --orange-text: #854F0B;
+    --teal: #1D9E75; --teal-bg: #E1F5EE; --teal-text: #085041;
+    --gray: #888780; --gray-bg: #F1EFE8; --gray-text: #5F5E5A;
+    --blue: #185FA5; --blue-bg: #E6F1FB; --blue-text: #0C447C;
+    --purple: #3C3489; --purple-bg: #EEEDFE; --purple-text: #26215C;
+    --bg: #F7F7F5; --card: #FFFFFF; --border: #E8E8E4;
+    --text: #1a1a1a; --text-2: #6b6b6b; --text-3: #a0a09a;
+    --radius: 12px; --radius-sm: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: 'Noto Sans SC', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  .header { background: var(--card); border-bottom: 1px solid var(--border); padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
+  .header-brand { display: flex; align-items: center; gap: 10px; }
+  .logo { width: 32px; height: 32px; background: var(--green); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+  .logo svg { width: 18px; height: 18px; fill: none; stroke: white; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .brand-name { font-size: 15px; font-weight: 600; }
+  .brand-sub { font-size: 11px; color: var(--text-2); }
+  .btn-add { background: var(--green); color: white; border: none; border-radius: var(--radius-sm); padding: 8px 16px; font-size: 14px; font-weight: 500; font-family: inherit; cursor: pointer; }
+  .btn-add:active { background: var(--green-dark); }
+  .stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; padding: 14px 16px 0; }
+  .stat { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 8px; text-align: center; }
+  .stat-num { font-size: 24px; font-weight: 600; line-height: 1; }
+  .stat-label { font-size: 10px; color: var(--text-2); margin-top: 3px; }
+  .filters { display: flex; gap: 6px; padding: 12px 16px; overflow-x: auto; scrollbar-width: none; }
+  .filters::-webkit-scrollbar { display: none; }
+  .filter-btn { flex-shrink: 0; font-size: 12px; font-family: inherit; padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border); background: var(--card); color: var(--text-2); cursor: pointer; white-space: nowrap; }
+  .filter-btn.active { background: var(--text); color: white; border-color: var(--text); }
+  .section-label { font-size: 11px; font-weight: 500; color: var(--text-3); text-transform: uppercase; letter-spacing: .06em; padding: 8px 16px 4px; }
+  .task-list { display: flex; flex-direction: column; gap: 8px; padding: 0 16px 16px; }
+  .task-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; position: relative; overflow: hidden; }
+  .task-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; }
+  .task-card.s-overdue { border-color: #f5c1c1; }
+  .task-card.s-overdue::before { background: var(--red); }
+  .task-card.s-soon { border-color: #f5d9a8; }
+  .task-card.s-soon::before { background: var(--orange); }
+  .task-card.s-normal::before { background: var(--teal); }
+  .task-card.s-low::before { background: #d0cfc8; }
+  .task-card.s-done { opacity: .6; }
+  .task-card.s-done::before { background: #d0cfc8; }
+  .task-row1 { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 7px; }
+  .task-check { width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid var(--border); flex-shrink: 0; margin-top: 1px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .task-check.done { background: var(--teal); border-color: var(--teal); }
+  .task-check.done::after { content: '✓'; font-size: 11px; color: white; font-weight: 600; }
+  .task-title { font-size: 14px; font-weight: 500; flex: 1; line-height: 1.45; }
+  .task-title.done { text-decoration: line-through; color: var(--text-3); }
+  .task-btns { display: flex; gap: 2px; }
+  .icon-btn { background: none; border: none; cursor: pointer; color: var(--text-3); padding: 3px 5px; border-radius: 6px; font-size: 15px; }
+  .task-row2 { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding-left: 30px; }
+  .badge { font-size: 11px; padding: 2px 8px; border-radius: 20px; }
+  .b-urgent { background: var(--red-bg); color: var(--red-text); }
+  .b-important { background: var(--orange-bg); color: var(--orange-text); }
+  .b-normal { background: var(--teal-bg); color: var(--teal-text); }
+  .b-low { background: var(--gray-bg); color: var(--gray-text); }
+  .b-metal { background: var(--blue-bg); color: var(--blue-text); }
+  .b-elec { background: var(--purple-bg); color: var(--purple-text); }
+  .due-tag { font-size: 11px; color: var(--text-2); }
+  .due-tag.overdue { color: var(--red-text); font-weight: 500; }
+  .due-tag.soon { color: var(--orange-text); }
+  .task-note { font-size: 11px; color: var(--text-3); }
+  .empty { padding: 60px 16px; text-align: center; color: var(--text-3); }
+  .empty-icon { font-size: 40px; margin-bottom: 10px; }
+  .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 100; align-items: flex-end; justify-content: center; }
+  .overlay.open { display: flex; }
+  .modal { background: var(--card); border-radius: 20px 20px 0 0; padding: 20px 16px 40px; width: 100%; max-width: 520px; max-height: 92vh; overflow-y: auto; }
+  .modal-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 16px; }
+  .modal-title { font-size: 17px; font-weight: 600; margin-bottom: 18px; }
+  .form-label { font-size: 12px; color: var(--text-2); margin-bottom: 5px; display: block; }
+  .form-group { margin-bottom: 14px; }
+  .form-input { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg); color: var(--text); font-size: 14px; font-family: inherit; }
+  .form-input:focus { outline: none; border-color: var(--green); }
+  .seg-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .seg-opt { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 9px 10px; cursor: pointer; text-align: center; font-size: 13px; color: var(--text-2); font-family: inherit; background: var(--bg); }
+  .seg-opt.sel-urgent { border-color: var(--red-text); background: var(--red-bg); color: var(--red-text); border-width: 1.5px; }
+  .seg-opt.sel-important { border-color: var(--orange-text); background: var(--orange-bg); color: var(--orange-text); border-width: 1.5px; }
+  .seg-opt.sel-normal { border-color: var(--teal); background: var(--teal-bg); color: var(--teal-text); border-width: 1.5px; }
+  .seg-opt.sel-low { border-color: var(--gray); background: var(--gray-bg); color: var(--gray-text); border-width: 1.5px; }
+  .seg-opt.sel-metal { border-color: var(--blue); background: var(--blue-bg); color: var(--blue-text); border-width: 1.5px; }
+  .seg-opt.sel-elec { border-color: var(--purple); background: var(--purple-bg); color: var(--purple-text); border-width: 1.5px; }
+  .modal-footer { display: flex; gap: 10px; margin-top: 20px; }
+  .btn-cancel { flex: 1; padding: 11px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: transparent; color: var(--text-2); font-size: 14px; font-family: inherit; cursor: pointer; }
+  .btn-save { flex: 2; padding: 11px; border-radius: var(--radius-sm); border: none; background: var(--green); color: white; font-size: 14px; font-weight: 500; font-family: inherit; cursor: pointer; }
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: #1a1a1a; color: white; padding: 10px 18px; border-radius: 20px; font-size: 13px; z-index: 200; transition: transform .3s ease; white-space: nowrap; }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .sync-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); display: inline-block; margin-left: 6px; vertical-align: middle; }
+  .sync-dot.syncing { background: var(--orange); animation: pulse .8s infinite; }
+  .sync-dot.error { background: var(--red); }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-brand">
+    <div class="logo">
+      <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    </div>
+    <div>
+      <div class="brand-name">任务管理 <span class="sync-dot" id="sync-dot"></span></div>
+      <div class="brand-sub">施耐德电气</div>
+    </div>
+  </div>
+  <button class="btn-add" onclick="openModal()">＋ 新任务</button>
+</div>
+
+<div class="stats">
+  <div class="stat"><div class="stat-num" id="s-active" style="color:var(--blue)">0</div><div class="stat-label">进行中</div></div>
+  <div class="stat"><div class="stat-num" id="s-overdue" style="color:var(--red)">0</div><div class="stat-label">已过期</div></div>
+  <div class="stat"><div class="stat-num" id="s-soon" style="color:var(--orange)">0</div><div class="stat-label">即将到期</div></div>
+  <div class="stat"><div class="stat-num" id="s-done" style="color:var(--teal)">0</div><div class="stat-label">已完成</div></div>
+</div>
+
+<div class="filters">
+  <button class="filter-btn active" onclick="setFilter('all',this)">全部</button>
+  <button class="filter-btn" onclick="setFilter('urgent',this)">🔴 紧急重要</button>
+  <button class="filter-btn" onclick="setFilter('important',this)">🟠 重要不紧急</button>
+  <button class="filter-btn" onclick="setFilter('metal',this)">🔵 金属团队</button>
+  <button class="filter-btn" onclick="setFilter('elec',this)">🟣 电子团队</button>
+  <button class="filter-btn" onclick="setFilter('overdue',this)">⚠️ 已过期</button>
+  <button class="filter-btn" onclick="setFilter('done',this)">✅ 已完成</button>
+</div>
+
+<div id="main-content"></div>
+
+<div class="overlay" id="modal" onclick="overlayClick(event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="modal-title">新建任务</div>
+    <div class="form-group">
+      <label class="form-label">任务标题 *</label>
+      <input class="form-input" id="f-title" placeholder="输入任务名称...">
+    </div>
+    <div class="form-group">
+      <label class="form-label">所属团队</label>
+      <div class="seg-grid">
+        <button class="seg-opt" data-team="金属" onclick="selTeam('金属')">🔵 金属团队</button>
+        <button class="seg-opt" data-team="电子" onclick="selTeam('电子')">🟣 电子团队</button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">优先级</label>
+      <div class="seg-grid">
+        <button class="seg-opt" data-pri="urgent" onclick="selPri('urgent')">🔴 紧急重要</button>
+        <button class="seg-opt" data-pri="important" onclick="selPri('important')">🟠 重要不紧急</button>
+        <button class="seg-opt" data-pri="normal" onclick="selPri('normal')">🟢 紧急不重要</button>
+        <button class="seg-opt" data-pri="low" onclick="selPri('low')">⚪ 可延后</button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">截止日期</label>
+      <input class="form-input" id="f-due" type="date">
+    </div>
+    <div class="form-group">
+      <label class="form-label">提前预警天数</label>
+      <select class="form-input" id="f-remind">
+        <option value="1">1天前变色提醒</option>
+        <option value="2">2天前变色提醒</option>
+        <option value="3" selected>3天前变色提醒</option>
+        <option value="5">5天前变色提醒</option>
+        <option value="7">7天前变色提醒</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">备注</label>
+      <input class="form-input" id="f-note" placeholder="补充说明（可选）">
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal()">取消</button>
+      <button class="btn-save" onclick="saveTask()">保存任务</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
